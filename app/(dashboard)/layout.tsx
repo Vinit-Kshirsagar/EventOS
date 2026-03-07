@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { authService } from '@/services/auth.service'
 import { User } from '@/types'
 import Sidebar from '@/components/shared/Sidebar'
-import { Loader2 } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -21,7 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent)' }} />
+      <div className="w-6 h-6 rounded-full border-2 animate-spin"
+        style={{ borderColor: 'var(--brand-soft)', borderTopColor: 'var(--brand)' }} />
     </div>
   )
 
