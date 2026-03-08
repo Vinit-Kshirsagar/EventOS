@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
+
   ArrowLeft, ArrowRight, Zap, Calendar, MapPin, Clock, Users,
   Image as ImageIcon, Share2, ExternalLink, Trophy, Award, Star, Check,
 } from 'lucide-react'
 import type { Event, User, Registration, LeaderboardEntry, EventCriteria, Score } from '@/types'
 import { formatDate, formatDateTime, timeUntil } from '@/lib/utils'
+
 import { authService } from '@/services/auth.service'
 import { registrationsService } from '@/services/registrations.service'
 
@@ -167,7 +169,7 @@ function DetailSkeleton() {
       <div style={{ height: 260, borderRadius: 20, background: 'var(--ink-6)', marginBottom: 32, animation: 'pulse 1.5s ease infinite' }} />
       <div style={{ height: 28, width: '60%', borderRadius: 8, background: 'var(--ink-6)', marginBottom: 16, animation: 'pulse 1.5s ease infinite' }} />
       <div style={{ height: 14, width: '40%', borderRadius: 6, background: 'var(--ink-6)', marginBottom: 32, animation: 'pulse 1.5s ease infinite' }} />
-      {[1,2,3,4].map(i => (
+      {[1, 2, 3, 4].map(i => (
         <div key={i} style={{ height: 60, borderRadius: 12, background: 'var(--ink-6)', marginBottom: 12, animation: 'pulse 1.5s ease infinite' }} />
       ))}
     </div>
@@ -356,12 +358,16 @@ export default function EventDetailPage() {
         ) : (
           <div style={{ position: 'relative', overflow: 'hidden' }}>
             {/* Background orbs */}
-            <div className="orb" style={{ width:500, height:500,
-              background:'radial-gradient(circle,rgba(229,116,49,0.25) 0%,transparent 68%)',
-              top:-160, right:-120, zIndex:0 }} />
-            <div className="orb" style={{ width:380, height:380,
-              background:'radial-gradient(circle,rgba(244,162,97,0.20) 0%,transparent 68%)',
-              bottom:100, left:-80, zIndex:0 }} />
+            <div className="orb" style={{
+              width: 500, height: 500,
+              background: 'radial-gradient(circle,rgba(229,116,49,0.25) 0%,transparent 68%)',
+              top: -160, right: -120, zIndex: 0
+            }} />
+            <div className="orb" style={{
+              width: 380, height: 380,
+              background: 'radial-gradient(circle,rgba(244,162,97,0.20) 0%,transparent 68%)',
+              bottom: 100, left: -80, zIndex: 0
+            }} />
 
             <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px 80px', position: 'relative', zIndex: 1 }}>
 
@@ -546,7 +552,7 @@ export default function EventDetailPage() {
                             <span style={{ color: 'white', fontSize: 14 }}>✓</span>
                           </div>
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46' }}>You're registered!</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#065F46' }}>You&apos;re registered!</div>
                             <div style={{ fontSize: 11, color: '#047857' }}>QR: {myReg.qr_token}</div>
                           </div>
                         </div>

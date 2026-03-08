@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path)
 
     return NextResponse.json({ url: urlData.publicUrl, error: null, success: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     console.error('POST /api/upload exception:', e)
     return NextResponse.json({ url: null, error: 'Upload failed', success: false }, { status: 500 })
