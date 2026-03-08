@@ -96,6 +96,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     }
 
     return NextResponse.json({ data: null, error: null, success: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     console.error('POST /api/registrations/[id]/cancel exception:', e)
     return NextResponse.json({ data: null, error: 'Cancellation failed', success: false }, { status: 500 })

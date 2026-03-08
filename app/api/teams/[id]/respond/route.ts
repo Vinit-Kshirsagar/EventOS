@@ -87,6 +87,7 @@ export async function POST(
 
     return NextResponse.json({ data: { status: response }, error: null, success: true })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     console.error(`POST /api/teams/[id]/respond exception:`, err)
     return NextResponse.json({ data: null, error: err.message || 'Internal error', success: false }, { status: 500 })
