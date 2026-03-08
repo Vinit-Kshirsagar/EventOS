@@ -144,7 +144,16 @@ export default function ParticipantDiscoverPage() {
             return (
               <div key={event.id} className={`card card-hover bg-white overflow-hidden slide-up`} style={{ animationDelay: `${i * 0.05}s` }}>
                 {/* Image header with date badge — clickable */}
-                <Link href={`/events/${event.id}`} className="relative h-36 gradient-brand flex items-end px-4 pb-3" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                <Link href={`/events/${event.id}`}
+                  className="relative h-36 flex items-end px-4 pb-3"
+                  style={{
+                    display: 'block', textDecoration: 'none', color: 'inherit',
+                    background: event.cover_image
+                      ? `url(${event.cover_image}) center/cover no-repeat`
+                      : 'linear-gradient(135deg, var(--brand), var(--brand-deep))',
+                  }}>
+                  {/* Dark overlay for readability */}
+                  <div style={{ position: 'absolute', inset: 0, background: event.cover_image ? 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 100%)' : 'none' }} />
                   {/* Decorative event icon */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
                     {event.type === 'TEAM' ? <Users className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}

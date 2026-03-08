@@ -234,13 +234,21 @@ function EventCard({ event, delayClass = '' }: { event: Event; delayClass?: stri
   return (
     <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
     <div className={`ecard fade-up ${delayClass}`}>
-      {/* Top accent stripe */}
+      {/* Cover image or gradient header */}
       <div style={{
-        height: 3,
-        background: almostFull
-          ? 'linear-gradient(90deg,#EF4444,#F97316)'
-          : 'linear-gradient(90deg,var(--brand),var(--brand-glow))',
-      }} />
+        height: event.cover_image ? 120 : 3,
+        borderRadius: event.cover_image ? '14px 14px 0 0' : undefined,
+        background: event.cover_image
+          ? `url(${event.cover_image}) center/cover no-repeat`
+          : almostFull
+            ? 'linear-gradient(90deg,#EF4444,#F97316)'
+            : 'linear-gradient(90deg,var(--brand),var(--brand-glow))',
+        position: 'relative',
+      }}>
+        {event.cover_image && (
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '14px 14px 0 0', background: 'linear-gradient(180deg, transparent 40%, rgba(26,18,11,0.4) 100%)' }} />
+        )}
+      </div>
 
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', flex: 1 }}>
         {/* Organizer + status */}

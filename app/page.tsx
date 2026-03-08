@@ -208,14 +208,23 @@ function EventCard({ event }: { event: Event }) {
   const almostFull = fill > 80
   return (
     <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
-    <div className="card flex flex-col" style={{ width: 300, minHeight: 340, padding: 20 }}>
-      {/* accent stripe */}
+    <div className="card flex flex-col" style={{ width: 300, minHeight: 340, padding: 0, overflow: 'hidden' }}>
+      {/* Cover image or gradient header */}
       <div style={{
-        height: 3, margin: '-20px -20px 16px', borderRadius: '14px 14px 0 0',
-        background: almostFull
-          ? 'linear-gradient(90deg,#EF4444,#F97316)'
-          : 'linear-gradient(90deg,var(--accent),var(--accent-glow))',
-      }} />
+        height: event.cover_image ? 120 : 3,
+        background: event.cover_image
+          ? `url(${event.cover_image}) center/cover no-repeat`
+          : almostFull
+            ? 'linear-gradient(90deg,#EF4444,#F97316)'
+            : 'linear-gradient(90deg,var(--accent),var(--accent-glow))',
+        position: 'relative',
+      }}>
+        {event.cover_image && (
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(26,18,11,0.4) 100%)' }} />
+        )}
+      </div>
+
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       <div className="flex items-center gap-2 mb-3">
         <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
@@ -271,6 +280,7 @@ function EventCard({ event }: { event: Event }) {
       <div className="btn btn-primary py-2 text-sm w-full rounded-xl text-center">
         View Event <ArrowRight className="w-3.5 h-3.5" />
       </div>
+    </div>
     </div>
     </Link>
   )
