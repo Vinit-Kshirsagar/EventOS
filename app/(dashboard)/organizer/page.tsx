@@ -1,7 +1,9 @@
 // Path: app/(dashboard)/organizer/page.tsx
 'use client'
+
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, X, Loader2, Calendar, MapPin, Users, BarChart3 } from 'lucide-react'
+
 import { eventsService } from '@/services/events.service'
 import { authService } from '@/services/auth.service'
 import { Event, CreateEventPayload, EventType, EventAnalytics, User } from '@/types'
@@ -15,7 +17,7 @@ const STATUS_BADGE: Record<string, string> = {
 const defaultForm: CreateEventPayload = {
   title: '', description: '', type: 'TEAM', start_date: '', end_date: '',
   location: '', max_participants: 100, max_team_size: 4, min_team_size: 2,
-  registration_deadline: '', tags: [],
+  registration_deadline: '', tags: [], cover_image: '',
 }
 
 function HealthBar({ score }: { score: number }) {
@@ -40,6 +42,8 @@ export default function OrganizerPage() {
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
 
   const load = useCallback(async () => {
     let u = user
@@ -67,9 +71,28 @@ export default function OrganizerPage() {
     e.preventDefault()
     if (!user) return
     setError(''); setSaving(true)
-    const res = await eventsService.create({ ...form, created_by: user.id })
+
+    let coverUrl = form.cover_image ?? ''
+
+    // Upload image if selected
+    if (imageFile) {
+      const fd = new FormData()
+      fd.append('file', imageFile)
+      try {
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd })
+        const uploadData = await uploadRes.json()
+        if (!uploadData.success) {
+          setError(uploadData.error ?? 'Image upload failed'); setSaving(false); return
+        }
+        coverUrl = uploadData.url
+      } catch {
+        setError('Image upload failed'); setSaving(false); return
+      }
+    }
+
+    const res = await eventsService.create({ ...form, cover_image: coverUrl || undefined, created_by: user.id })
     if (!res.success) { setError(res.error ?? 'Failed'); setSaving(false); return }
-    await load(); setShowCreate(false); setForm(defaultForm); setSaving(false)
+    await load(); setShowCreate(false); setForm(defaultForm); setImageFile(null); setImagePreview(''); setSaving(false)
   }
 
   async function updateStatus(id: string, status: Event['status']) {
@@ -291,6 +314,43 @@ export default function OrganizerPage() {
                         </span>
                       ))}
                     </div>
+                  )}
+                </div>
+
+                {/* Cover Image Upload */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--ink-2)' }}>Cover Image <span style={{ color: 'var(--ink-4)', fontWeight: 400 }}>(optional)</span></label>
+                  {imagePreview ? (
+                    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', marginBottom: 8, border: '1px solid var(--border)' }}>
+                      <img src={imagePreview} alt="Preview" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+                      <button type="button" onClick={() => { setImageFile(null); setImagePreview('') }}
+                        className="p-1.5 rounded-lg"
+                        style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', cursor: 'pointer' }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label style={{
+                      display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '24px 16px', borderRadius: 12, cursor: 'pointer',
+                      border: '2px dashed var(--border)', background: 'var(--surface)',
+                      transition: 'border-color 0.15s, background 0.15s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)' }}
+                    >
+                      <Upload className="w-5 h-5" style={{ color: 'var(--ink-4)' }} />
+                      <span className="text-xs font-medium" style={{ color: 'var(--ink-3)' }}>Click to upload banner image</span>
+                      <span className="text-xs" style={{ color: 'var(--ink-4)' }}>JPEG, PNG, WebP • Max 5MB</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setImageFile(file)
+                            setImagePreview(URL.createObjectURL(file))
+                          }
+                        }} />
+                    </label>
                   )}
                 </div>
               </div>

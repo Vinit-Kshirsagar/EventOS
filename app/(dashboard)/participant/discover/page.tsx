@@ -1,7 +1,9 @@
 // Path: app/(dashboard)/participant/discover/page.tsx
 'use client'
 import { useEffect, useState } from 'react'
+
 import { Calendar, MapPin, Clock, Users, CheckCircle, Loader2, Plus, Search, Zap } from 'lucide-react'
+
 import { authService } from '@/services/auth.service'
 import { eventsService } from '@/services/events.service'
 import { registrationsService } from '@/services/registrations.service'
@@ -142,8 +144,8 @@ export default function ParticipantDiscoverPage() {
 
             return (
               <div key={event.id} className={`card card-hover bg-white overflow-hidden slide-up`} style={{ animationDelay: `${i * 0.05}s` }}>
-                {/* Image header with date badge */}
-                <div className="relative h-36 gradient-brand flex items-end px-4 pb-3">
+                {/* Image header with date badge — clickable */}
+                <Link href={`/events/${event.id}`} className="relative h-36 gradient-brand flex items-end px-4 pb-3" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                   {/* Decorative event icon */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
                     {event.type === 'TEAM' ? <Users className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}
@@ -158,7 +160,7 @@ export default function ParticipantDiscoverPage() {
                     style={{ backdropFilter: 'blur(10px)', position: 'absolute', bottom: 12, right: 12 }}>
                     {event.status}
                   </span>
-                </div>
+                </Link>
 
                 <div className="p-5">
                   {/* Organizer */}
@@ -169,7 +171,11 @@ export default function ParticipantDiscoverPage() {
                     <span className="text-xs font-medium" style={{ color: 'var(--ink-3)' }}>{event.organizer?.name ?? 'Organizer'}</span>
                   </div>
 
-                  <h3 className="font-bold text-[15px] mb-2 line-clamp-2 leading-snug">{event.title}</h3>
+                  <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <h3 className="font-bold text-[15px] mb-2 line-clamp-2 leading-snug" style={{ cursor: 'pointer', transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--brand)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'inherit'}>{event.title}</h3>
+                  </Link>
 
                   <div className="space-y-1.5 mb-3">
                     {[
@@ -201,20 +207,34 @@ export default function ParticipantDiscoverPage() {
                     </div>
                   )}
 
-                  {/* Action */}
-                  {isReg ? (
-                    <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
-                      style={{ background: 'var(--green-light)', color: 'var(--green)' }}>
-                      <CheckCircle className="w-4 h-4" />Registered
-                    </div>
-                  ) : (
-                    <button onClick={() => handleRegister(event.id)} disabled={registering === event.id}
-                      className="btn btn-primary py-2.5 text-sm w-full" style={{ borderRadius: 12 }}>
-                      {registering === event.id
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Registering…</>
-                        : <><Plus className="w-3.5 h-3.5" />Register</>}
-                    </button>
-                  )}
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Link href={`/events/${event.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold"
+                      style={{
+                        background: 'var(--brand-pale)', color: 'var(--brand)',
+                        border: '1px solid var(--brand-soft)', textDecoration: 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-soft)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--brand-pale)' }}
+                    >
+                      View Details
+                    </Link>
+                    {isReg ? (
+                      <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
+                        style={{ background: 'var(--green-light)', color: 'var(--green)' }}>
+                        <CheckCircle className="w-4 h-4" />Registered
+                      </div>
+                    ) : (
+                      <button onClick={() => handleRegister(event.id)} disabled={registering === event.id}
+                        className="btn btn-primary py-2.5 text-sm flex-1" style={{ borderRadius: 12 }}>
+                        {registering === event.id
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Registering…</>
+                          : <><Plus className="w-3.5 h-3.5" />Register</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )

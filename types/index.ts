@@ -57,6 +57,7 @@ export interface CreateEventPayload {
   min_team_size?: number
   registration_deadline: string
   tags: string[]
+  cover_image?: string
 }
 
 // ─── REGISTRATION ─────────────────────────────────────────────────────────────

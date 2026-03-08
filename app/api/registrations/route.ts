@@ -66,12 +66,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'Event is full', success: false }, { status: 400 })
     }
 
-    // 2. Insert the registration (unique constraint will prevent double registration implicitly)
+    // 2. Check if user already has a registration for this event (possibly cancelled)
+    const { data: existing } = await supabase
+      .from('registrations')
+      .select('id, status')
+      .eq('event_id', event_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (existing) {
+      if (existing.status !== 'CANCELLED') {
+        return NextResponse.json({ data: null, error: 'Already registered', success: false }, { status: 409 })
+      }
+      // Re-activate the cancelled registration
+      const { data: reactivated, error: reactivateError } = await supabase
+        .from('registrations')
+        .update({ status: 'CONFIRMED', qr_token: generateQRToken(event_id, user.id), checked_in: false, team_id: null })
+        .eq('id', existing.id)
+        .select(`*, user:profiles!registrations_user_id_fkey(*)`)
+        .single()
+
+      if (reactivateError) {
+        console.error("Reactivate registration error:", reactivateError)
+        return NextResponse.json({ data: null, error: reactivateError.message, success: false }, { status: 500 })
+      }
+      return NextResponse.json({ data: reactivated, error: null, success: true }, { status: 200 })
+    }
+
+    // 3. Insert new registration
     const { data, error } = await supabase
       .from('registrations')
       .insert({
         event_id,
-        user_id: user.id, // always use authed user's ID
+        user_id: user.id,
         status: 'CONFIRMED',
         qr_token: generateQRToken(event_id, user.id),
       })
@@ -79,10 +106,6 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      // Postgres error code 23505 is unique violation
-      if (error.code === '23505') {
-        return NextResponse.json({ data: null, error: 'Already registered', success: false }, { status: 409 })
-      }
       console.error("Supabase insert error:", error)
       return NextResponse.json({ data: null, error: error.message, success: false }, { status: 500 })
     }

@@ -25,4 +25,9 @@ export const registrationsService = {
     const res = await this.getMyRegistrations(userId)
     return res.data?.some((r: any) => r.event_id === eventId && r.status !== 'CANCELLED') ?? false
   },
+
+  async cancelRegistration(registrationId: string) {
+    const res = await fetch(`/api/registrations/${registrationId}/cancel`, { method: 'POST' })
+    return res.json()
+  },
 }

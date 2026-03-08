@@ -5,7 +5,7 @@ import {
   ArrowRight, Zap, Calendar, MapPin, Clock, Users,
   Search, X, ArrowLeft, Flame, Cpu, Globe2,
 } from 'lucide-react'
-import { Event } from '@/types'
+import type { Event } from '@/types'
 import { formatDate, timeUntil } from '@/lib/utils'
 
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
@@ -232,6 +232,7 @@ function EventCard({ event, delayClass = '' }: { event: Event; delayClass?: stri
   const spotsLeft = event.max_participants - (event.registration_count ?? 0)
 
   return (
+    <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
     <div className={`ecard fade-up ${delayClass}`}>
       {/* Top accent stripe */}
       <div style={{
@@ -330,11 +331,14 @@ function EventCard({ event, delayClass = '' }: { event: Event; delayClass?: stri
         </div>
 
         {/* CTA */}
+
         <Link href="/register" className="btn-brand" style={{ width: '100%' }}>
           Register — it&apos;s free <ArrowRight className="w-3.5 h-3.5" />
+
         </Link>
       </div>
     </div>
+    </Link>
   )
 }
 

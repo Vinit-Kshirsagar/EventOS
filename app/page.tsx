@@ -207,7 +207,8 @@ function EventCard({ event }: { event: Event }) {
   const fill = Math.min(((event.registration_count ?? 0) / event.max_participants) * 100, 100)
   const almostFull = fill > 80
   return (
-    <div className="card flex flex-col flex-shrink-0" style={{ width: 300, minHeight: 340, padding: 20 }}>
+    <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
+    <div className="card flex flex-col" style={{ width: 300, minHeight: 340, padding: 20 }}>
       {/* accent stripe */}
       <div style={{
         height: 3, margin: '-20px -20px 16px', borderRadius: '14px 14px 0 0',
@@ -269,10 +270,13 @@ function EventCard({ event }: { event: Event }) {
         </div>
       </div>
 
+
       <Link href="/register" className="btn btn-primary py-2 text-sm w-full rounded-xl text-center">
         Register — it&apos;s free <ArrowRight className="w-3.5 h-3.5" />
       </Link>
+
     </div>
+    </Link>
   )
 }
 

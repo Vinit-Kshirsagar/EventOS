@@ -105,14 +105,18 @@ export default function ParticipantDashboard() {
                 <div key={reg.id} className={`card bg-white overflow-hidden slide-up stagger-${Math.min(i + 1, 6)}`}>
                   <div className="flex">
                     {/* Orange date sidebar */}
-                    <div className="w-20 flex-shrink-0 flex flex-col items-center justify-center gradient-brand text-white px-3 py-4">
+                    <Link href={`/events/${event.id}`} className="w-20 flex-shrink-0 flex flex-col items-center justify-center gradient-brand text-white px-3 py-4" style={{ textDecoration: 'none', color: 'inherit' }}>
                       <span className="font-display text-2xl font-bold leading-none">{day}</span>
                       <span className="text-xs font-semibold mt-1 opacity-90">{month}</span>
-                    </div>
+                    </Link>
                     {/* Event info */}
                     <div className="flex-1 p-4 flex items-center gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-[15px] mb-1 truncate">{event.title}</h3>
+                        <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                          <h3 className="font-semibold text-[15px] mb-1 truncate" style={{ cursor: 'pointer', transition: 'color 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--brand)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'inherit'}>{event.title}</h3>
+                        </Link>
                         <div className="flex items-center gap-3 flex-wrap text-xs" style={{ color: 'var(--ink-3)' }}>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{event.location}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeUntil(event.start_date)}</span>
@@ -120,6 +124,19 @@ export default function ParticipantDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
+                        {/* View Details */}
+                        <Link href={`/events/${event.id}`}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                          style={{
+                            background: 'var(--brand-pale)', color: 'var(--brand)',
+                            border: '1px solid var(--brand-soft)', textDecoration: 'none',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-soft)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--brand-pale)' }}
+                        >
+                          View Details
+                        </Link>
                         {/* QR Token */}
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
                           style={{ background: 'var(--brand-pale)', border: '1px solid var(--brand-soft)' }}>
@@ -130,6 +147,35 @@ export default function ParticipantDashboard() {
                         <span className={`badge ${reg.checked_in ? 'badge-green' : 'badge-orange'}`}>
                           {reg.checked_in ? '✓ Checked In' : reg.status}
                         </span>
+                        {/* Cancel button */}
+                        {!reg.checked_in && (
+                          <button
+                            onClick={async () => {
+                              const isLeader = reg.team_id && user
+                              const msg = isLeader
+                                ? 'You are a team leader. Cancelling will dissolve your team and cancel all members\' registrations. Continue?'
+                                : 'Cancel your registration for this event?'
+                              if (!confirm(msg)) return
+                              const res = await fetch(`/api/registrations/${reg.id}/cancel`, { method: 'POST' })
+                              const data = await res.json()
+                              if (data.success) {
+                                setMyRegs(prev => prev.filter(r => r.id !== reg.id))
+                              } else {
+                                alert(data.error ?? 'Failed to cancel')
+                              }
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                            style={{
+                              background: 'transparent', color: 'var(--red)',
+                              border: '1.5px solid currentColor', cursor: 'pointer',
+                              transition: 'background 0.15s, color 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
