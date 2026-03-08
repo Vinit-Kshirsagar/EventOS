@@ -7,8 +7,8 @@ import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock } from 'lucide-react'
 import { authService } from '@/services/auth.service'
 
 const QUICK = [
-  { label: '🎯 Organizer', email: 'organizer@eventos.dev', pass: 'org123' },
-  { label: '🎟 Participant', email: 'participant@eventos.dev', pass: 'part123' },
+  { label: '🎯 Organizer', email: 'adminr@event.dev', pass: '123456' },
+  { label: '🎟 Participant', email: 'vin@event.dev', pass: '123456' },
 ]
 
 export default function LoginPage() {
