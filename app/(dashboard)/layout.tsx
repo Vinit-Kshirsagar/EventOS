@@ -1,45 +1,56 @@
 // Path: app/(dashboard)/layout.tsx
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase/client'
-import { authService } from '@/services/auth.service'
 import { User } from '@/types'
 import Sidebar from '@/components/shared/Sidebar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const router   = useRouter()
+  const pathname = usePathname()
+  const [user, setUser]       = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Create client inside effect — safe, @supabase/ssr handles deduplication
     const supabase = createBrowserClient()
-    let mounted = true
 
-    // ── onAuthStateChange is the single source of truth ──────────────────────
-    // Fires immediately with INITIAL_SESSION — no separate getSession() needed.
-    // Eliminates the race condition where getSession() resolved before the
-    // session cookie from login/register was fully written to the browser.
+    // onAuthStateChange is the most reliable way to get the session.
+    // It fires INITIAL_SESSION synchronously from the cookie on mount —
+    // no network call, no hanging, no race condition.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return
-
         if (event === 'INITIAL_SESSION') {
-          if (!session) {
+          if (!session?.user) {
+            setLoading(false)
             router.replace('/login')
             return
           }
-          const profile = await authService.getCurrentUser()
-          if (!profile) { router.replace('/login'); return }
-          setUser(profile)
-          setLoading(false)
-          return
-        }
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          const profile = await authService.getCurrentUser()
-          if (profile) { setUser(profile); setLoading(false) }
-          return
+          // Single lightweight profile fetch
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('id, email, name, role, avatar_url, created_at')
+            .eq('id', session.user.id)
+            .single()
+
+          if (error || !profile) {
+            console.error('Profile fetch failed:', error)
+            await supabase.auth.signOut()
+            router.replace('/login')
+            return
+          }
+
+          setUser({
+            id:         profile.id,
+            email:      profile.email,
+            name:       profile.name,
+            role:       profile.role,
+            avatar_url: profile.avatar_url ?? undefined,
+            created_at: profile.created_at,
+          })
+          setLoading(false)
         }
 
         if (event === 'SIGNED_OUT') {
@@ -49,13 +60,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     )
 
-    return () => { mounted = false; subscription.unsubscribe() }
+    return () => subscription.unsubscribe()
   }, [router])
+
+  // Role-based route guard
+  useEffect(() => {
+    if (!user || loading) return
+    if (user.role === 'ORGANIZER'  && pathname.startsWith('/participant')) {
+      router.replace('/organizer')
+    }
+    if (user.role === 'PARTICIPANT' && pathname.startsWith('/organizer')) {
+      router.replace('/participant')
+    }
+  }, [user, loading, pathname, router])
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-6 h-6 rounded-full border-2 animate-spin"
-        style={{ borderColor: 'var(--brand-soft)', borderTopColor: 'var(--brand)' }} />
+      <div
+        className="w-6 h-6 rounded-full border-2 animate-spin"
+        style={{ borderColor: 'var(--ink-5)', borderTopColor: 'var(--accent)' }}
+      />
     </div>
   )
 

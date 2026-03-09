@@ -1,72 +1,57 @@
-// Path: middleware.ts  (project root, next to app/)
+// Path: middleware.ts
 // ─── SUPABASE AUTH MIDDLEWARE ─────────────────────────────────────────────────
-// Refreshes the Supabase Auth session on every request so cookies stay fresh.
-// Without this, the session expires and server components get a null user.
-//
-// Also protects dashboard routes: redirects unauthenticated users to /login.
+// Single responsibility: refresh the session cookie on every request.
+// Route protection is handled by (dashboard)/layout.tsx on the client,
+// which avoids the redirect loop caused by cookie timing on hard refresh.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(req: NextRequest) {
-    const { pathname } = req.nextUrl
+  const { pathname } = req.nextUrl
 
-    // Skip middleware entirely for API routes — they handle their own auth
-    if (pathname.startsWith('/api')) {
-        return NextResponse.next()
+  // API routes handle their own auth — skip entirely
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next()
+  }
+
+  let res = NextResponse.next({ request: req })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          // Write to both the request (for this middleware pass) and
+          // the response (so the browser gets the refreshed cookie)
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
+          res = NextResponse.next({ request: req })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          )
+        },
+      },
     }
+  )
 
-    let res = NextResponse.next({ request: req })
+  // IMPORTANT: calling getUser() here refreshes the session cookie.
+  // We intentionally do NOT redirect based on the result here —
+  // that caused the infinite loop on hard refresh because the cookie
+  // isn't always readable server-side before the browser hydrates.
+  // The layout handles the redirect client-side via onAuthStateChange,
+  // which is reliable because it reads from the in-memory session.
+  await supabase.auth.getUser()
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return req.cookies.getAll()
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
-                    res = NextResponse.next({ request: req })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        res.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
-    )
-
-    // Refresh session — must be called before any route protection checks
-    const { data: { user } } = await supabase.auth.getUser()
-
-    // ── Route protection ───────────────────────────────────────────────────────
-    const isProtected =
-        pathname.startsWith('/organizer') ||
-        pathname.startsWith('/participant')
-
-    const isAuthPage =
-        pathname.startsWith('/login') ||
-        pathname.startsWith('/register')
-
-    // Unauthenticated user trying to access a protected page → redirect to login
-    if (isProtected && !user) {
-        return NextResponse.redirect(new URL('/login', req.url))
-    }
-
-    // Already logged-in user visiting login/register → redirect to dashboard
-    if (isAuthPage && user) {
-        // We don't have role here without a DB call, so redirect to a neutral
-        // route that will further redirect based on role
-        return NextResponse.redirect(new URL('/', req.url))
-    }
-
-    return res
+  return res
 }
 
 export const config = {
-    matcher: [
-        // Only run on pages that need auth checks — skip static files, API routes, and auth callbacks
-        '/((?!_next/static|_next/image|favicon.ico|api).*)',
-    ],
+  matcher: [
+    // Run on all pages except Next.js internals, static files, and API routes
+    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+  ],
 }
