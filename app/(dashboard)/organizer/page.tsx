@@ -122,7 +122,8 @@ export default function OrganizerPage() {
       }
     }
 
-    const res = await eventsService.create({ ...form, cover_image: coverUrl || undefined, created_by: user.id })
+    const payload = { ...form, cover_image: coverUrl || undefined, created_by: user.id } as CreateEventPayload & { created_by: string }
+    const res = await eventsService.create(payload)
     if (!res.success) { setError(res.error ?? 'Failed'); setSaving(false); return }
     await load(); setShowCreate(false); setForm(defaultForm); setImageFile(null); setImagePreview(''); setSaving(false)
   }
