@@ -10,7 +10,7 @@ import { authService } from '@/services/auth.service'
 import { Event, User } from '@/types'
 import { formatDate } from '@/lib/utils'
 
-/* ─── CSS overrides (same fonts, new palette + blur effects) ─────────────── */
+/* ─── CSS overrides ──────────────────────────────────────────────────────── */
 const CSS = `
   :root {
     --accent:        #E57431;
@@ -39,13 +39,11 @@ const CSS = `
 
   body { background: var(--surface) !important; }
 
-  /* ─ Blur orbs ─ */
   .orb {
     position: absolute; border-radius: 50%;
     pointer-events: none; filter: blur(80px);
   }
 
-  /* ─ Nav glass ─ */
   .nav-glass {
     background: rgba(253,240,232,0.82) !important;
     backdrop-filter: blur(18px) saturate(1.5) !important;
@@ -53,7 +51,6 @@ const CSS = `
     border-bottom: 1px solid rgba(229,116,49,0.18) !important;
   }
 
-  /* ─ Cards ─ */
   .card {
     background: rgba(255,255,255,0.82) !important;
     border: 1.5px solid var(--border) !important;
@@ -67,7 +64,6 @@ const CSS = `
     border-color: var(--accent-mid) !important;
   }
 
-  /* ─ Feature cards (frosted) ─ */
   .feat-card {
     background: rgba(255,255,255,0.68) !important;
     backdrop-filter: blur(14px) !important;
@@ -83,7 +79,6 @@ const CSS = `
     border-color: var(--accent-mid) !important;
   }
 
-  /* ─ Stats strip ─ */
   .stats-strip {
     background: rgba(255,255,255,0.50) !important;
     backdrop-filter: blur(20px) saturate(1.3) !important;
@@ -92,7 +87,6 @@ const CSS = `
     border-bottom: 1px solid rgba(229,116,49,0.16) !important;
   }
 
-  /* ─ Buttons ─ */
   .btn-primary {
     background: var(--accent) !important;
     color: white !important;
@@ -120,7 +114,6 @@ const CSS = `
   .btn-ghost { color: var(--ink-3) !important; transition: color 0.15s, background 0.15s !important; }
   .btn-ghost:hover { color: var(--accent) !important; background: rgba(229,116,49,0.07) !important; }
 
-  /* ─ Badges ─ */
   .badge-blue   { background: #DBEAFE !important; color: #1E40AF !important; }
   .badge-green  { background: #D1FAE5 !important; color: #065F46 !important; }
   .badge-indigo {
@@ -129,7 +122,6 @@ const CSS = `
     border: 1px solid var(--accent-mid) !important;
   }
 
-  /* ─ Dot chip ─ */
   .accent-chip {
     background: var(--accent-light) !important;
     color: var(--accent) !important;
@@ -141,17 +133,14 @@ const CSS = `
   }
   @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
 
-  /* ─ Logo ─ */
   .logo-bg {
     background: linear-gradient(135deg, var(--accent), var(--accent-deep)) !important;
     box-shadow: 0 2px 12px rgba(229,116,49,0.36) !important;
   }
 
-  /* ─ Carousel fades ─ */
   .fade-l { background: linear-gradient(to right,  var(--surface), transparent) !important; }
   .fade-r { background: linear-gradient(to left,   var(--surface), transparent) !important; }
 
-  /* ─ End card ─ */
   .end-card {
     background: rgba(253,240,232,0.65) !important;
     border: 2px dashed var(--accent-mid) !important;
@@ -163,17 +152,14 @@ const CSS = `
     background: rgba(253,240,232,0.92) !important;
   }
 
-  /* ─ Demo code block ─ */
   .demo-code { background: var(--ink-6) !important; border: 1px solid var(--border) !important; }
 
-  /* ─ Footer ─ */
   footer {
     background: rgba(253,240,232,0.72) !important;
     backdrop-filter: blur(12px) !important;
     border-color: var(--border) !important;
   }
 
-  /* ─ Scroll hide ─ */
   .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
   .hide-scroll::-webkit-scrollbar { display: none; }
 `
@@ -209,84 +195,82 @@ function EventCard({ event }: { event: Event }) {
   const almostFull = fill > 80
   return (
     <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
-    <div className="card flex flex-col" style={{ width: 300, minHeight: 340, padding: 0, overflow: 'hidden' }}>
-      {/* Cover image or gradient header */}
-      <div style={{
-        height: event.cover_image ? 120 : 3,
-        background: event.cover_image
-          ? `url(${event.cover_image}) center/cover no-repeat`
-          : almostFull
-            ? 'linear-gradient(90deg,#EF4444,#F97316)'
-            : 'linear-gradient(90deg,var(--accent),var(--accent-glow))',
-        position: 'relative',
-      }}>
-        {event.cover_image && (
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(26,18,11,0.4) 100%)' }} />
-        )}
-      </div>
-
-      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', flex: 1 }}>
-
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-deep))' }}>
-          {event.organizer?.name?.[0]?.toUpperCase() ?? '?'}
+      <div className="card flex flex-col" style={{ width: 300, minHeight: 340, padding: 0, overflow: 'hidden' }}>
+        <div style={{
+          height: event.cover_image ? 120 : 3,
+          background: event.cover_image
+            ? `url(${event.cover_image}) center/cover no-repeat`
+            : almostFull
+              ? 'linear-gradient(90deg,#EF4444,#F97316)'
+              : 'linear-gradient(90deg,var(--accent),var(--accent-glow))',
+          position: 'relative',
+        }}>
+          {event.cover_image && (
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(26,18,11,0.4) 100%)' }} />
+          )}
         </div>
-        <span className="text-xs font-medium truncate flex-1" style={{ color: 'var(--ink-3)' }}>
-          {event.organizer?.name ?? 'Organizer'}
-        </span>
-        <span className={`badge flex-shrink-0 ${STATUS_BADGE[event.status] ?? 'badge-neutral'}`}>
-          {event.status}
-        </span>
-      </div>
 
-      <h3 className="font-bold text-[15px] mb-1.5 line-clamp-1">{event.title}</h3>
-      <p className="text-sm leading-relaxed mb-4 flex-1 line-clamp-2" style={{ color: 'var(--ink-3)' }}>
-        {event.description}
-      </p>
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-      <div className="space-y-1 mb-3">
-        {[
-          { Icon: MapPin, text: event.location },
-          { Icon: Calendar, text: formatDate(event.start_date) },
-          {
-            Icon: Users, text: event.type === 'TEAM'
-              ? `Teams of ${event.min_team_size ?? 2}–${event.max_team_size ?? 4}`
-              : 'Individual'
-          },
-        ].map(({ Icon, text }) => (
-          <div key={text} className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-3)' }}>
-            <Icon className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--accent)' }} />{text}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-deep))' }}>
+              {event.organizer?.name?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            <span className="text-xs font-medium truncate flex-1" style={{ color: 'var(--ink-3)' }}>
+              {event.organizer?.name ?? 'Organizer'}
+            </span>
+            <span className={`badge flex-shrink-0 ${STATUS_BADGE[event.status] ?? 'badge-neutral'}`}>
+              {event.status}
+            </span>
           </div>
-        ))}
+
+          <h3 className="font-bold text-[15px] mb-1.5 line-clamp-1">{event.title}</h3>
+          <p className="text-sm leading-relaxed mb-4 flex-1 line-clamp-2" style={{ color: 'var(--ink-3)' }}>
+            {event.description}
+          </p>
+
+          <div className="space-y-1 mb-3">
+            {[
+              { Icon: MapPin, text: event.location },
+              { Icon: Calendar, text: formatDate(event.start_date) },
+              {
+                Icon: Users, text: event.type === 'TEAM'
+                  ? `Teams of ${event.min_team_size ?? 2}–${event.max_team_size ?? 4}`
+                  : 'Individual'
+              },
+            ].map(({ Icon, text }) => (
+              <div key={text} className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-3)' }}>
+                <Icon className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--accent)' }} />{text}
+              </div>
+            ))}
+          </div>
+
+          {event.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {event.tags.slice(0, 3).map(t => <span key={t} className="badge badge-indigo">{t}</span>)}
+            </div>
+          )}
+
+          <div className="mb-4">
+            <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--ink-3)' }}>
+              <span>{event.registration_count ?? 0} / {event.max_participants}</span>
+              {almostFull && <span className="font-semibold" style={{ color: 'var(--red)' }}>Almost full!</span>}
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--ink-5)' }}>
+              <div className="h-full rounded-full" style={{
+                width: `${fill}%`,
+                background: almostFull ? 'var(--red)' : 'var(--accent)',
+              }} />
+            </div>
+          </div>
+
+          <Link href="/register" className="btn btn-primary py-2 text-sm w-full rounded-xl text-center">
+            Register — it&apos;s free <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+
+        </div>
       </div>
-
-      {event.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {event.tags.slice(0, 3).map(t => <span key={t} className="badge badge-indigo">{t}</span>)}
-        </div>
-      )}
-
-      <div className="mb-4">
-        <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--ink-3)' }}>
-          <span>{event.registration_count ?? 0} / {event.max_participants}</span>
-          {almostFull && <span className="font-semibold" style={{ color: 'var(--red)' }}>Almost full!</span>}
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--ink-5)' }}>
-          <div className="h-full rounded-full" style={{
-            width: `${fill}%`,
-            background: almostFull ? 'var(--red)' : 'var(--accent)',
-          }} />
-        </div>
-      </div>
-
-
-      <Link href="/register" className="btn btn-primary py-2 text-sm w-full rounded-xl text-center">
-        Register — it&apos;s free <ArrowRight className="w-3.5 h-3.5" />
-      </Link>
-
-    </div>
-    </div>
     </Link>
   )
 }
@@ -310,6 +294,8 @@ function SkeletonCard() {
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 export default function LandingPage() {
+  // FIX: user stored in ref — auth check is fire-and-forget, doesn't block event carousel
+  const userRef = useRef<User | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [events, setEvents] = useState<Event[]>([])
   const [evLoading, setEvLoading] = useState(true)
@@ -319,17 +305,37 @@ export default function LandingPage() {
   const [canScrollRight, setCanScrollRight] = useState(false)
 
   useEffect(() => {
-    authService.getCurrentUser().then(setUser)
+    // FIX: auth and events are completely independent — neither blocks the other
+    // Auth resolves into ref+state; events fetch starts immediately in parallel
+    authService.getCurrentUser().then(u => {
+      userRef.current = u
+      setUser(u)
+    })
 
-    Promise.all([
-      fetch('/api/events?status=PUBLISHED').then(r => r.json()),
-      fetch('/api/events?status=ONGOING').then(r => r.json()),
-    ])
-      .then(([pub, ong]) => {
-        setEvents([...(pub.data ?? []), ...(ong.data ?? [])])
+    // FIX: progressive load — PUBLISHED and ONGOING each update the list as they resolve
+    // Instead of Promise.all (which waits for both), each fetch merges into state independently
+    fetch('/api/events?status=PUBLISHED')
+      .then(r => r.json())
+      .then(pub => {
+        setEvents(prev => {
+          const existingIds = new Set(prev.map((e: Event) => e.id))
+          const newEvents = (pub.data ?? []).filter((e: Event) => !existingIds.has(e.id))
+          return [...prev, ...newEvents]
+        })
         setEvLoading(false)
       })
       .catch(() => setEvLoading(false))
+
+    fetch('/api/events?status=ONGOING')
+      .then(r => r.json())
+      .then(ong => {
+        setEvents(prev => {
+          const existingIds = new Set(prev.map((e: Event) => e.id))
+          const newEvents = (ong.data ?? []).filter((e: Event) => !existingIds.has(e.id))
+          return [...prev, ...newEvents]
+        })
+      })
+      .catch(() => {/* ONGOING is best-effort — don't hide PUBLISHED events on failure */ })
   }, [])
 
   useEffect(() => {
@@ -386,7 +392,6 @@ export default function LandingPage() {
 
         {/* ── Hero ── */}
         <section className="pt-24 pb-20 px-6 relative overflow-hidden">
-          {/* Blur orbs */}
           <div className="orb" style={{
             width: 620, height: 620,
             background: 'radial-gradient(circle,rgba(229,116,49,0.42) 0%,transparent 68%)',

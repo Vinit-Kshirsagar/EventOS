@@ -7,9 +7,9 @@ import { User } from '@/types'
 import Sidebar from '@/components/shared/Sidebar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router   = useRouter()
+  const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser]       = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -43,10 +43,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }
 
           setUser({
-            id:         profile.id,
-            email:      profile.email,
-            name:       profile.name,
-            role:       profile.role,
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role,
             avatar_url: profile.avatar_url ?? undefined,
             created_at: profile.created_at,
           })
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Role-based route guard
   useEffect(() => {
     if (!user || loading) return
-    if (user.role === 'ORGANIZER'  && pathname.startsWith('/participant')) {
+    if (user.role === 'ORGANIZER' && pathname.startsWith('/participant')) {
       router.replace('/organizer')
     }
     if (user.role === 'PARTICIPANT' && pathname.startsWith('/organizer')) {

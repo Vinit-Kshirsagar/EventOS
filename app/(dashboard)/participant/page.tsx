@@ -1,6 +1,5 @@
-// Path: app/(dashboard)/participant/page.tsx
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Calendar, QrCode, Users, CheckCircle, Clock, MapPin, Trophy, ArrowRight, Compass, Star, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { authService } from '@/services/auth.service'
@@ -124,44 +123,78 @@ function ReviewModal({ event, existingReview, onClose, onSubmitted }: {
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 export default function ParticipantDashboard() {
+  // FIX: useRef for user — prevents stale closure in callbacks and avoids infinite loop
+  const userRef = useRef<User | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [events, setEvents] = useState<Event[]>([])
+
+  // FIX: separate loading states — registrations + reviews can render immediately while events stream in
+  const [loading, setLoading] = useState(true)
+
+  // FIX: events stored as a map for O(1) lookup — eliminates O(N²) .find() in render
+  const [eventsMap, setEventsMap] = useState<Record<string, Event>>({})
   const [myRegs, setMyRegs] = useState<Registration[]>([])
   const [myReviews, setMyReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
+
   // Review modal
   const [reviewEvent, setReviewEvent] = useState<Event | null>(null)
 
+  // FIX: stable load with empty deps — user stored in ref, not captured in closure
   const load = useCallback(async () => {
     const u = await authService.getCurrentUser()
+    // FIX: always call setLoading(false) even if user is null — no infinite spinner
+    if (!u) { setLoading(false); return }
+    userRef.current = u
     setUser(u)
-    if (!u) return
 
-    const [evRes, regRes, revRes] = await Promise.all([
-      eventsService.getAll(),
-      registrationsService.getMyRegistrations(u.id),
-      reviewsService.getByUser(u.id),
-    ])
-    setEvents(evRes.data ?? [])
-    setMyRegs((regRes.data ?? []).filter((r: Registration) => r.status !== 'CANCELLED'))
-    setMyReviews(revRes.data ?? [])
-    setLoading(false)
-  }, [])
+    // FIX: progressive load — registrations + reviews don't block each other or the events list
+    // Kick off all three in parallel; each updates state independently as it resolves
+    registrationsService.getMyRegistrations(u.id).then(res => {
+      setMyRegs((res.data ?? []).filter((r: Registration) => r.status !== 'CANCELLED'))
+    })
+
+    reviewsService.getByUser(u.id).then(res => {
+      setMyReviews(res.data ?? [])
+    })
+
+    eventsService.getAll().then(res => {
+      // Build map for O(1) lookup in render
+      const map: Record<string, Event> = {}
+      for (const ev of (res.data ?? [])) map[ev.id] = ev
+      setEventsMap(map)
+      setLoading(false)
+    })
+  }, []) // empty deps — no captured state variables; userRef holds the value
 
   useEffect(() => { load() }, [load])
 
-  // Split registrations into upcoming vs past
-  const upcomingRegs = myRegs.filter(r => {
-    const event = events.find(e => e.id === r.event_id)
-    return event && event.status !== 'COMPLETED' && event.status !== 'CANCELLED'
-  })
-  const pastRegs = myRegs.filter(r => {
-    const event = events.find(e => e.id === r.event_id)
-    return event && (event.status === 'COMPLETED' || event.status === 'CANCELLED')
-  })
+  // FIX: useMemo — derived lists computed once per data change, not on every render
+  const upcomingRegs = useMemo(() =>
+    myRegs.filter(r => {
+      const ev = eventsMap[r.event_id]
+      return ev && ev.status !== 'COMPLETED' && ev.status !== 'CANCELLED'
+    }),
+    [myRegs, eventsMap]
+  )
 
-  const checkedInCount = myRegs.filter(r => r.checked_in).length
-  const registeredEvents = myRegs.map(r => events.find(e => e.id === r.event_id)).filter(Boolean) as Event[]
+  const pastRegs = useMemo(() =>
+    myRegs.filter(r => {
+      const ev = eventsMap[r.event_id]
+      return ev && (ev.status === 'COMPLETED' || ev.status === 'CANCELLED')
+    }),
+    [myRegs, eventsMap]
+  )
+
+  const checkedInCount = useMemo(() => myRegs.filter(r => r.checked_in).length, [myRegs])
+
+  const teamEventCount = useMemo(() =>
+    myRegs.filter(r => eventsMap[r.event_id]?.type === 'TEAM').length,
+    [myRegs, eventsMap]
+  )
+
+  const completedCount = useMemo(() =>
+    pastRegs.filter(r => eventsMap[r.event_id]?.status === 'COMPLETED').length,
+    [pastRegs, eventsMap]
+  )
 
   function getReviewForEvent(eventId: string) {
     return myReviews.find(r => r.event_id === eventId)
@@ -199,8 +232,8 @@ export default function ParticipantDashboard() {
         {[
           { label: 'Upcoming', value: upcomingRegs.length, icon: Calendar, iconBg: 'var(--brand-pale)', iconColor: 'var(--brand)' },
           { label: 'Checked In', value: checkedInCount, icon: CheckCircle, iconBg: 'var(--green-light)', iconColor: 'var(--green)' },
-          { label: 'Competitions', value: registeredEvents.filter(e => e.type === 'TEAM').length, icon: Trophy, iconBg: 'var(--brand-pale)', iconColor: 'var(--brand)' },
-          { label: 'Completed', value: pastRegs.filter(r => events.find(e => e.id === r.event_id)?.status === 'COMPLETED').length, icon: Star, iconBg: 'var(--amber-light)', iconColor: 'var(--amber)' },
+          { label: 'Competitions', value: teamEventCount, icon: Trophy, iconBg: 'var(--brand-pale)', iconColor: 'var(--brand)' },
+          { label: 'Completed', value: completedCount, icon: Star, iconBg: 'var(--amber-light)', iconColor: 'var(--amber)' },
         ].map(({ label, value, icon: Icon, iconBg, iconColor }, i) => (
           <div key={label} className={`card bg-white p-5 slide-up stagger-${i + 1}`}>
             <div className="flex items-center gap-3 mb-3">
@@ -236,7 +269,8 @@ export default function ParticipantDashboard() {
           </div>
           <div className="space-y-3">
             {upcomingRegs.map((reg, i) => {
-              const event = events.find(e => e.id === reg.event_id)
+              // FIX: O(1) map lookup instead of .find() in render body
+              const event = eventsMap[reg.event_id]
               if (!event) return null
               const startDate = new Date(event.start_date)
               const day = startDate.getDate()
@@ -280,7 +314,9 @@ export default function ParticipantDashboard() {
                         {!reg.checked_in && (
                           <button
                             onClick={async () => {
-                              const isLeader = reg.team_id && user
+                              // FIX: read from ref — not stale state
+                              const currentUser = userRef.current
+                              const isLeader = reg.team_id && currentUser
                               const msg = isLeader
                                 ? 'You are a team leader. Cancelling will dissolve your team and cancel all members\' registrations. Continue?'
                                 : 'Cancel your registration for this event?'
@@ -321,7 +357,8 @@ export default function ParticipantDashboard() {
           </div>
           <div className="space-y-3">
             {pastRegs.map((reg, i) => {
-              const event = events.find(e => e.id === reg.event_id)
+              // FIX: O(1) map lookup
+              const event = eventsMap[reg.event_id]
               if (!event) return null
               const review = getReviewForEvent(event.id)
               const isCompleted = event.status === 'COMPLETED'

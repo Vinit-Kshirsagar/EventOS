@@ -1,6 +1,5 @@
-// Path: app/(dashboard)/participant/discover/page.tsx
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Calendar, MapPin, Clock, Users, CheckCircle, Loader2, Plus, Search, Zap } from 'lucide-react'
 
@@ -13,7 +12,10 @@ import { timeUntil } from '@/lib/utils'
 const FILTERS = ['All', 'Hackathons', 'Workshops', 'Meetups', 'Online', 'Free']
 
 export default function ParticipantDiscoverPage() {
+  // FIX: useRef for user — handleRegister reads from ref, never stale
+  const userRef = useRef<User | null>(null)
   const [user, setUser] = useState<User | null>(null)
+
   const [events, setEvents] = useState<Event[]>([])
   const [myRegs, setMyRegs] = useState<Registration[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,26 +28,33 @@ export default function ParticipantDiscoverPage() {
   useEffect(() => {
     async function load() {
       const u = await authService.getCurrentUser()
+      // FIX: always unblock loading even when unauthenticated
+      if (!u) { setLoading(false); return }
+      userRef.current = u
       setUser(u)
-      if (!u) return
 
-      const [evRes, regRes] = await Promise.all([
-        eventsService.getAll(),
-        registrationsService.getMyRegistrations(u.id),
-      ])
-      setEvents((evRes.data ?? []).filter((e: Event) =>
-        ['PUBLISHED', 'ONGOING'].includes(e.status) && e.created_by !== u.id
-      ))
-      setMyRegs((regRes.data ?? []).filter((r: Registration) => r.status !== 'CANCELLED'))
-      setLoading(false)
+      // FIX: progressive load — events render immediately; registrations arrive separately
+      // User sees the event grid as soon as eventsService resolves, without waiting for regs
+      eventsService.getAll().then(evRes => {
+        setEvents((evRes.data ?? []).filter((e: Event) =>
+          ['PUBLISHED', 'ONGOING'].includes(e.status) && e.created_by !== u.id
+        ))
+        setLoading(false)
+      })
+
+      registrationsService.getMyRegistrations(u.id).then(regRes => {
+        setMyRegs((regRes.data ?? []).filter((r: Registration) => r.status !== 'CANCELLED'))
+      })
     }
     load()
   }, [])
 
+  // FIX: reads user from ref — no stale closure on first render after session hydrates
   async function handleRegister(eventId: string) {
-    if (!user) return
+    const currentUser = userRef.current
+    if (!currentUser) return
     setRegistering(eventId)
-    const res = await registrationsService.register({ event_id: eventId, user_id: user.id })
+    const res = await registrationsService.register({ event_id: eventId, user_id: currentUser.id })
     if (res.success && res.data) {
       setMyRegs(prev => [...prev, res.data])
       setToast('🎉 Registered! Head to My Teams to form or join a team.')
@@ -63,17 +72,12 @@ export default function ParticipantDiscoverPage() {
     const index = new Map<string, Set<string>>()
 
     const addTokens = (text: string, eventId: string) => {
-      // Split by non-alphanumeric characters and lowercase
       const tokens = text.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean)
-
-      // Generate expanding prefixes for each token to support partial matching
       for (const token of tokens) {
         let prefix = ''
         for (const char of token) {
           prefix += char
-          if (!index.has(prefix)) {
-            index.set(prefix, new Set())
-          }
+          if (!index.has(prefix)) index.set(prefix, new Set())
           index.get(prefix)!.add(eventId)
         }
       }
@@ -91,41 +95,33 @@ export default function ParticipantDiscoverPage() {
 
   // Debounce search input to avoid recalculating on every keystroke
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search)
-    }, 300)
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(timer)
   }, [search])
 
-  const registeredIds = new Set(myRegs.map(r => r.event_id))
+  // FIX: registeredIds derived via useMemo — not recomputed on unrelated re-renders
+  const registeredIds = useMemo(() => new Set(myRegs.map(r => r.event_id)), [myRegs])
 
   const filtered = useMemo(() => {
     let result = events
 
-    // 1. Text Search utilizing Inverted Index (Fast lookup)
     const query = debouncedSearch.trim().toLowerCase()
     if (query) {
       const tokens = query.split(/[^a-z0-9]+/i).filter(Boolean)
-
       if (tokens.length > 0) {
-        // Intersect sets for multi-word queries
         let matchingIds: Set<string> | null = null
-
         for (const token of tokens) {
           const itemSet = searchIndex.get(token) || new Set<string>()
           if (matchingIds === null) {
             matchingIds = new Set(itemSet)
           } else {
-            // Intersection
             matchingIds = new Set(Array.from<string>(matchingIds).filter(id => itemSet.has(id)))
           }
         }
-
         result = result.filter(e => matchingIds!.has(e.id))
       }
     }
 
-    // 2. Category Filter
     if (activeFilter !== 'All') {
       result = result.filter(e => {
         const titleWords = e.title.toLowerCase()
@@ -231,18 +227,14 @@ export default function ParticipantDiscoverPage() {
                       ? `url(${event.cover_image}) center/cover no-repeat`
                       : 'linear-gradient(135deg, var(--brand), var(--brand-deep))',
                   }}>
-                  {/* Dark overlay for readability */}
                   <div style={{ position: 'absolute', inset: 0, background: event.cover_image ? 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 100%)' : 'none' }} />
-                  {/* Decorative event icon */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
                     {event.type === 'TEAM' ? <Users className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}
                   </div>
-                  {/* Date badge */}
                   <div className="absolute top-4 left-4 bg-white rounded-lg p-2 text-center shadow-sm" style={{ minWidth: 48 }}>
                     <div className="font-display text-lg font-bold leading-none" style={{ color: 'var(--brand)' }}>{day}</div>
                     <div className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--ink-3)' }}>{month}</div>
                   </div>
-                  {/* Status */}
                   <span className={`badge ${event.status === 'ONGOING' ? 'badge-green' : 'badge-orange'}`}
                     style={{ backdropFilter: 'blur(10px)', position: 'absolute', bottom: 12, right: 12 }}>
                     {event.status}
@@ -250,7 +242,6 @@ export default function ParticipantDiscoverPage() {
                 </Link>
 
                 <div className="p-5">
-                  {/* Organizer */}
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 gradient-brand">
                       {event.organizer?.name[0].toUpperCase() ?? '?'}
